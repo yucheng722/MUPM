@@ -33,34 +33,20 @@ torch.backends.cuda.enable_flash_sdp(False)
 #output_path = '/SAN/medic/candi_tyc/Yucheng/6000182_2_0_lax_3c.npy'
 
 def append_to_excel(file_path, data_frame, sheet_name='Sheet1'):
-    """
-    将数据追加到 Excel 文件的指定 sheet 中。
-    :param file_path: Excel 文件路径
-    :param data_frame: 要追加的数据 (DataFrame)
-    :param sheet_name: 要写入的工作表名称
-    """
     try:
-        # 检查 Excel 文件是否存在
         with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
             data_frame.to_excel(writer, sheet_name=sheet_name, index=False, header=False, startrow=writer.sheets[sheet_name].max_row)
     except FileNotFoundError:
-        # 如果文件不存在，则创建一个新的文件
         with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
             data_frame.to_excel(writer, sheet_name=sheet_name, index=False)
 
 def append_to_json(file_path, data_frame, orient="records", indent=4):
-    """
-    :param file_path: JSON 文件路径
-    :param data_frame: 需要追加的 DataFrame
-    :param orient: JSON 格式（默认 "records"）
-    :param indent: JSON 缩进格式（默认 4）
-    """
     try:
         try:
             with open(file_path, "r", encoding="utf-8") as file:
                 existing_data = json.load(file)
                 if not isinstance(existing_data, list):
-                    raise ValueError("JSON 数据不是列表格式，无法追加数据。")
+                    raise ValueError("JSON data is not in list format and data cannot be appended")
         except (FileNotFoundError, json.JSONDecodeError):
             existing_data = []
         new_data = json.loads(data_frame.to_json(orient=orient))
@@ -101,8 +87,7 @@ def data_affine(image_np):
 
     transformed_image_np = image_transform(image).numpy()
 
-    #噪声
-    noise = np.random.normal(0, 0.1, transformed_image_np.shape)  # 生成高斯噪声
+    noise = np.random.normal(0, 10.0, transformed_image_np.shape)  
     noisy_image = transformed_image_np + noise
 
     return np.squeeze(noisy_image)
@@ -111,41 +96,38 @@ def data_affine(image_np):
     #        .to(dtype=torch.float64))  #shape: (1,1,256,256,50)
 
 def get_prob_logits(logits_list_1, logits_list_2, logits_list_3):
-    # 找到三个 logits_list 中最大的 seq_len
     max_seq_len_1 = max([logits.shape[1] for logits in logits_list_1])
     max_seq_len_2 = max([logits.shape[1] for logits in logits_list_2])
     max_seq_len_3 = max([logits.shape[1] for logits in logits_list_3])
 
     #max_seq_len = max(max_seq_len_1, max_seq_len_2, max_seq_len_3)
 
-    # 填充 logits 使得所有 logits 的 seq_len 相同
     probs_list_1, probs_list_2, probs_list_3 = [], [], []
 
-    # 处理第一个 logits_list
+
     for logits in logits_list_1:
         probs = F.softmax(logits, dim=-1)
         padding_size = max_seq_len_1 - probs.shape[1]
-        padded_probs = F.pad(probs, (0, 0, 0, padding_size))  # 填充第二维
+        padded_probs = F.pad(probs, (0, 0, 0, padding_size))  
         probs_list_1.append(padded_probs)
 
-    # 处理第二个 logits_list
+
     for logits in logits_list_2:
         probs = F.softmax(logits, dim=-1)
         padding_size = max_seq_len_2 - probs.shape[1]
-        padded_probs = F.pad(probs, (0, 0, 0, padding_size))  # 填充第二维
+        padded_probs = F.pad(probs, (0, 0, 0, padding_size)) 
         probs_list_2.append(padded_probs)
 
-    # 处理第三个 logits_list
+
     for logits in logits_list_3:
         probs = F.softmax(logits, dim=-1)
         padding_size = max_seq_len_3 - probs.shape[1]
-        padded_probs = F.pad(probs, (0, 0, 0, padding_size))  # 填充第二维
+        padded_probs = F.pad(probs, (0, 0, 0, padding_size))  
         probs_list_3.append(padded_probs)
 
     return probs_list_1, probs_list_2, probs_list_3
 
 def get_token_embeddings(embeddings_list_1, embeddings_list_2, embeddings_list_3):
-    # 找到三个 embeddings_list 中最大的 seq_len 和 embedding_dim
     max_seq_len = max(
         max([embeddings.shape[1] for embeddings in embeddings_list_1]),
         max([embeddings.shape[1] for embeddings in embeddings_list_2]),
@@ -160,25 +142,21 @@ def get_token_embeddings(embeddings_list_1, embeddings_list_2, embeddings_list_3
     def pad_embeddings(embeddings_list):
         padded_list = []
         for embeddings in embeddings_list:
-            # 填充 seq_len 和 embedding_dim
             seq_padding = max_seq_len - embeddings.shape[1]
             #dim_padding = max_embedding_dim - embeddings.shape[2]
             padded_embeddings = F.pad(embeddings, (0, 0, 0, seq_padding))
             padded_list.append(padded_embeddings)
         return padded_list
-
-    # 填充每个 embeddings_list
     embd_1 = pad_embeddings(embeddings_list_1)
     embd_2 = pad_embeddings(embeddings_list_2)
     embd_3 = pad_embeddings(embeddings_list_3)
 
-    # 转为张量
     return embd_1, embd_2, embd_3
 
 def compute_variance(embd):
 
     logits_stack = torch.stack(embd, dim=0)  # (num_tta, batch_size, seq_len, vocab_size)
-    logits_variance = torch.var(logits_stack, dim=0, unbiased=True)  # 按照 TTA 维度计算方差
+    logits_variance = torch.var(logits_stack, dim=0, unbiased=True)  
     return logits_variance
 
 def compute_covariance(embd_1, embd_2):
@@ -188,30 +166,24 @@ def compute_covariance(embd_1, embd_2):
     num_tta, batch_size, seq_len, embedding_dim = stack_1.shape
     covariance_result = torch.zeros(batch_size, seq_len, embedding_dim, device=stack_1.device)
 
-    # 计算协方差
     for b in range(batch_size):
         for s in range(seq_len):
-            embd_1_token = stack_1[:, b, s, :]  # 取出第一个 embeddings 的第 s 个 token，形状为 (num_tta, embedding_dim)
-            embd_2_token = stack_2[:, b, s, :]  # 取出第二个 embeddings 的第 s 个 token，形状为 (num_tta, embedding_dim)
+            embd_1_token = stack_1[:, b, s, :]  
+            embd_2_token = stack_2[:, b, s, :] 
 
-            # 计算均值
-            mean_embd_1 = embd_1_token.mean(dim=0)  # 计算第一个 embeddings 的均值，形状为 (embedding_dim,)
-            mean_embd_2 = embd_2_token.mean(dim=0)  # 计算第二个 embeddings 的均值，形状为 (embedding_dim,)
+            mean_embd_1 = embd_1_token.mean(dim=0)  
+            mean_embd_2 = embd_2_token.mean(dim=0)  
 
-            # 中心化
-            centered_embd_1 = embd_1_token - mean_embd_1  # 第一个 embeddings 中心化
-            centered_embd_2 = embd_2_token - mean_embd_2  # 第二个 embeddings 中心化
+            centered_embd_1 = embd_1_token - mean_embd_1  
+            centered_embd_2 = embd_2_token - mean_embd_2  
 
-            # 对每个embedding_dim维度计算协方差
             for e in range(embedding_dim):
-                # 计算协方差：针对num_tta维度进行协方差计算
-                cov = (centered_embd_1[:, e] @ centered_embd_2[:, e]) / (num_tta - 1)  # 协方差公式
-                covariance_result[b, s, e] = cov  # 存储计算结果
+                cov = (centered_embd_1[:, e] @ centered_embd_2[:, e]) / (num_tta - 1) 
+                covariance_result[b, s, e] = cov 
 
     return covariance_result.float().detach().cpu().numpy()
 
 def compute_entropy(probs):
-    """计算熵"""
     return -torch.sum(probs * torch.log(probs + 1e-9), dim=-1)
 
 def compute_tta_metrics(logits_list_1,logits_list_2,logits_list_3, input_ids
@@ -223,41 +195,34 @@ def compute_tta_metrics(logits_list_1,logits_list_2,logits_list_3, input_ids
     metric_df = pd.DataFrame()
     i = 1
     for probs_list,embd in zip([probs_list_1,probs_list_2,probs_list_3],
-                               [embd_1,embd_2,embd_3]):
-    # 计算平均概率分布
+
       probs_mean = torch.mean(torch.stack(probs_list), dim=0)  # (batch_size, seq_len, vocab_size)
 
-    # === 计算预测熵（PE） ===
       predictive_entropy = compute_entropy(probs_mean)  # (batch_size, seq_len)
-      metric_df['Predictive_Etropy_{}'.format(i)] = [predictive_entropy.mean().item()]  # 求平均
+      metric_df['Predictive_Etropy_{}'.format(i)] = [predictive_entropy.mean().item()]  
 
-    # === 计算条件熵（CE） ===
       conditional_entropies = torch.stack([
-        compute_entropy(probs) for probs in probs_list  # 每个 TTA 样本的条件熵
+        compute_entropy(probs) for probs in probs_list  
       ])  # (num_tta, batch_size, seq_len)
       avg_conditional_entropy = conditional_entropies.mean(dim=0)  # (batch_size, seq_len)
-      metric_df['Conditional_Etropy_{}'.format(i)] = [avg_conditional_entropy.mean().item()]  # 求平均
+      metric_df['Conditional_Etropy_{}'.format(i)] = [avg_conditional_entropy.mean().item()]  
 
     # === 计算互信息（MI） ===
     #mutual_information = predictive_entropy - avg_conditional_entropy  # (batch_size, seq_len)
-    #avg_mutual_information = mutual_information.mean().item()  # 求平均
+    #avg_mutual_information = mutual_information.mean().item()  
 
-    # === 计算平均预测 G-NLL ===
-    # 使用平均分布计算 G-NLL
       #token_probs_mean = probs_mean.gather(dim=2, index=input_ids.unsqueeze(-1)).squeeze(-1)  # (batch_size, seq_len)
-      #token_probs_mean = torch.clamp(token_probs_mean, min=1e-9)  # 防止 log(0)
-      #g_nll_pred = -torch.log(token_probs_mean).mean(dim=1).mean().item()  # 对每个样本的平均 G-NLL 求均值
+      #token_probs_mean = torch.clamp(token_probs_mean, min=1e-9)  
+      #g_nll_pred = -torch.log(token_probs_mean).mean(dim=1).mean().item()  
       #metric_df['Predictive_NLL_{}'.format(i)] = [g_nll_pred]
 
-    # === 计算平均条件 G-NLL ===
-    # 使用每个 TTA 的分布计算 G-NLL，然后取平均
       #g_nll_conditional = []
       #for probs in probs_list:
         #token_probs = probs.gather(dim=2, index=input_ids.unsqueeze(-1)).squeeze(-1)  # (batch_size, seq_len)
-        #token_probs = torch.clamp(token_probs, min=1e-9)  # 防止 log(0)
-        #g_nll = -torch.log(token_probs).mean(dim=1)  # 每个样本的平均 G-NLL
+        #token_probs = torch.clamp(token_probs, min=1e-9)  
+        #g_nll = -torch.log(token_probs).mean(dim=1)  
         #g_nll_conditional.append(g_nll)
-      #g_nll_conditional = torch.stack(g_nll_conditional, dim=0).mean(dim=0).mean().item()  # 求平均
+      #g_nll_conditional = torch.stack(g_nll_conditional, dim=0).mean(dim=0).mean().item()  
       #metric_df['Predictive_NLL_{}'.format(i)] = [g_nll_conditional]
 
       variance = compute_variance(embd)
@@ -362,7 +327,7 @@ def get_npy(item_dir_list, name,name_dir_list,Image_aug,affine_time):
         output_path = os.path.join('/SAN/medic/candi_tyc/Yucheng/npy/', 'npy_data')
         output_path = process_nii_to_npy(image_path, output_path, Image_aug,
                                          affine = True,
-                                         affine_size = 50, #多少个t加入affine
+                                         affine_size = 50, 
                                          affine_time = affine_time,
                                          target_depth=32,
                                          target_shape=(256, 256))
@@ -381,7 +346,7 @@ def get_text_info(text_dir,time):
       filtered_df = df[~df['answer'].str.contains(r'No|none of above', case=False, na=False)]
       sampled_data = filtered_df.to_dict('records')
       #抽取40%的样本
-      sample_size = max(1, int(len(sampled_data) * 0.2))  # 至少抽取 1 条
+      sample_size = max(1, int(len(sampled_data) * 0.2)) 
       sampled_data = random.sample(sampled_data, sample_size)
       #answer_counts = Counter(answer)
       #for ans_category in answer_counts.keys():
@@ -397,7 +362,7 @@ def get_pre(model,tokenizer,proj_out_num,sampled_data,
     i = 0
     for n in sampled_data:
       for time in [1,2,3]:
-        if time == 1: #第一次随机采样，第二次就沿用第一次
+        if time == 1: 
           Image_aug, Text_aug = True, False
         if time == 2:
           Image_aug, Text_aug = False, True
@@ -409,7 +374,7 @@ def get_pre(model,tokenizer,proj_out_num,sampled_data,
         if Image_aug == True:
           image_path_list.append(get_npy(item_dir_list, name,
                                          name_dir_list,False,0))
-          for time in np.arange(20): #每个图片对应10个仿射变换图片
+          for time in np.arange(20): 
               image_path_list.append(get_npy(item_dir_list, name,
                                              name_dir_list,True,
                                              time))
@@ -580,8 +545,6 @@ print('Image process finished')
 
 #model
 model_name_or_path = 'GoodBaiBai88/M3D-LaMed-Phi-3-4B'
-#model_name_or_path = 'GoodBaiBai88/M3D-LaMed-Llama-2-7B'
-#model_name_or_path = 'GoodBaiBai88/M3D-CLIP'
 proj_out_num = 256
 model = AutoModelForCausalLM.from_pretrained(
     model_name_or_path,
@@ -600,11 +563,9 @@ tokenizer = AutoTokenizer.from_pretrained(
 print('Model loading finished')
 
 #text
-#text_dir = r"D:\NewPythonProject\Yucheng\text\mmbench_result_ori.xlsx"
-IMG_Path_dir = "/SAN/medic/candi_tyc/Yucheng/text/IMG"
-background_dir = "/SAN/medic/candi_tyc/Yucheng/text/background"
-#save_result_dir = "/SAN/medic/candi_tyc/Yucheng/results.json"
-save_result_dir = "/SAN/medic/candi_tyc/Yucheng/results_text_only.xlsx"
+background_dir = "/text/background"
+#save_result_dir = "/results.json"
+save_result_dir = "/results_text_only.xlsx"
 df2 = pd.read_excel(save_list_dir)
 item_dir_list = df2['Item'].tolist()
 name_dir_list = df2['Name'].tolist()
@@ -612,8 +573,8 @@ text_dir = '/SAN/medic/candi_tyc/Yucheng/text/evaluation.xlsx'
 #text_dir = '/SAN/medic/candi_tyc/Yucheng/text/evaluation_reduced.xlsx'
 sampled_data = get_text_info(text_dir,1)
 
-#for time in [1,2,3]:  #1.只变图像 2.只变文本 3.一起变（用之前的）
-#  if time == 1: #第一次随机采样，第二次就沿用第一次
+#for time in [1,2,3]: 
+#  if time == 1: 
 #     Image_aug, Text_aug = True, False
 #  if time == 2:
 #     Image_aug, Text_aug = False, True
