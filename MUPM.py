@@ -20,15 +20,12 @@ def compute_covariance(embd_1, embd_2):
     num_tta, embedding_dim = embd_1.shape
     covariance_result = np.zeros(embedding_dim)
 
-    # 计算均值
     mean_embd_1 = np.mean(embd_1, axis=0)  # (11,)
     mean_embd_2 = np.mean(embd_2, axis=0)  # (11,)
 
-    # 中心化
     centered_embd_1 = embd_1 - mean_embd_1  # (num_tta, 11)
     centered_embd_2 = embd_2 - mean_embd_2  # (num_tta, 11)
 
-    # 计算协方差（逐元素计算 11 维度的协方差）
     for e in range(embedding_dim):
         cov = np.dot(centered_embd_1[:, e], centered_embd_2[:, e]) / (num_tta - 1)
         covariance_result[e] = cov
@@ -170,8 +167,8 @@ def fit_1(x,y):
     model = LinearRegression()
     model.fit(x, y)
     r_squared = model.score(x, y)
-    print("拟合的系数（a1, a2, a3）：", model.coef_)
-    print("拟合的截距（a0）：", model.intercept_)
+    print("(b1, b2, b3)：", model.coef_)
+    print("(b0)：", model.intercept_)
     print(r_squared)
     return model,r_squared
 
@@ -180,22 +177,19 @@ def fit_2(x1,x2,y):
     model = LinearRegression()
     model.fit(X, y)
     r_squared = model.score(X, y)
-    print("拟合的系数（a1, a2, a3）：", model.coef_)
-    print("拟合的截距（a0）：", model.intercept_)
+    print("(b1, b2, b3)：", model.coef_)
+    print("(b0)：", model.intercept_)
     print(r_squared)
     return model,r_squared
 
 def fit_3(X,V):
-    # 创建线性回归模型
     model = LinearRegression(fit_intercept=False)
 
-    # 拟合模型
     model.fit(X, V)
     r_squared = model.score(X, V)
 
-    # 输出拟合的参数
-    print("拟合的系数（a1, a2, a3）：", model.coef_)
-    #print("拟合的截距（a0）：", model.intercept_)
+    print("(b1, b2, b3)：", model.coef_)
+    #print("(b0)：", model.intercept_)
     print(r_squared)
     return model,r_squared
 
@@ -256,7 +250,6 @@ def val(VI,VT,V,C,n_splits=1):
             #V = np.concatenate(V)
             #y = V
             #C = np.concatenate(C)
-        # 将自变量堆叠成一个二维数组 (每一行是一个样本，每一列是一个特征)
         #X = np.vstack([VI, VT, C]).T
         X_train = np.vstack([x1_train, x2_train, x3_train]).T
         X_test = np.vstack([x1_test, x2_test, x3_test]).T
@@ -326,7 +319,7 @@ model,r2 = fit_1(con2,con3)
 model,r2 = fit_2(pe1,pe2,pe3)
 model,r2 = fit_2(con1,con2,con3)
 
-#绘图
+#Plot
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
@@ -367,7 +360,6 @@ plt.savefig(r'D:\NewPythonProject\results\figures\t-SNE.png')
 plt.show()
 plt.close()
 
-#箱线图
 data = np.concatenate([VI, VT, V], axis=0)
 norm_VI = np.linalg.norm(data[:len(VI)], axis=1)
 norm_VT = np.linalg.norm(data[len(VI):len(VI)+len(VT)], axis=1)
@@ -375,11 +367,10 @@ norm_V  = np.linalg.norm(data[len(VI)+len(VT):], axis=1)
 norm_VT = norm_VT[(norm_VT <= 0.38) | (norm_VT >= 0.4)]
 
 
-# 组合数据
 data = [norm_VI, norm_VT, norm_V]
 labels = ["Image-Only", "Text-Only", "Image-Text"]
 
-# 绘制箱线图
+
 plt.figure(figsize=(7, 5))
 sns.boxplot(data=data, palette=["#FF6B6B", "#48C9B0", "#5B8FF9"],
             linewidth=1.6,width=0.8)
@@ -400,7 +391,7 @@ plt.show()
 plt.close()
 
 
-#方差分析（ANOVA），成对t检验
+#ANOVA
 import scipy.stats as stats
 beta1 = [x1[i][2] for i in np.arange(5)]
 beta2 = [x2[i][2] for i in np.arange(5)]
@@ -422,109 +413,13 @@ f_statistic, p_value = stats.f_oneway(np.array(beta1),
 print(f"F-statistic: {f_statistic}")
 print(f"P-value: {p_value}")
 
-#成对t检验
+
 for i in np.arange(5):
    for j in np.arange(i+1,5):
      t_statistic, p_value = stats.ttest_rel(combined_list[i], combined_list[j])
      print(f"t-statistic: {t_statistic}")
      print(f"P-value: {p_value}")
 
-
-#画Application3的折线图
-coe = [0.21,0.93,-0.22]
-y1 = np.array([0.10668934240362812, 0.1999474386877851, 0.32096069868995863,
-               0.10710819990295974, 0.11593886462882072, 0.11276772717820782,
-               0.1114334234421571, 0.11268628266444862])
-y2 = np.array([0.34323507180650037, 0.2370776464589027, 0.3098010674429909,
-               0.32399320718098007, 0.32241630276564887, 0.3148332986760929,
-               0.31726450405489676, 0.3194242277211724])
-ou = y1*coe[0]+y2*coe[1]+np.sqrt(y1)*np.sqrt(y2)*coe[2]
-arr1 = np.array([0.38961152, 0.18944358, 0.28005839, 0.27358955, 0.27262955,
-                 0.26619836, 0.26816118, 0.27000713])
-arr2 = np.array([0.19478276, 0.21382963, 0.286367  , 0.27848587, 0.27752985,
-                 0.27098193, 0.27297461, 0.27485488])
-arr3 = np.array([0.19732295, 0.25436288, 0.28619812, 0.28086119, 0.2798519 ,
-                 0.27325157, 0.2752724 , 0.27716598])
-arr4 = np.array([0.39624455, 0.23781278, 0.29278522, 0.28004273, 0.27933188,
-                 0.27272972, 0.27467683, 0.27658196])
-arr5 = np.array([0.29951368, 0.17457223, 0.28614381, 0.28282357, 0.2816594 ,
-                 0.27502324, 0.27709123, 0.27498964])
-data = np.stack([arr1, arr2, arr3, arr4, arr5], axis=0)
-y1 = ou_mean = np.mean(data, axis=0)[:8]
-ou_std = np.std(data, axis=0)[:8]
-y2 = [0.27359738,0.27359738,0.27359738,0.27359738,
-      0.27359738,0.27359738,0.27359738]
-x = np.array([2, 5,8, 11,14,17,20,23])
-plt.figure(figsize=(7, 5))
-plt.errorbar(x, y1, yerr=ou_std,fmt='o', color='purple',capsize=5,linestyle='-',
-             label=r'Overall Uncertainty Computed by MUPM')
-plt.axhline(y=0.27359738, color='red', linestyle='--', label='Overall Uncertainty Benchmark')
-#plt.plot(x, y2, marker='', color='red', linestyle='--',
-#         label=r'Overall Uncertainty Benchmark')
-plt.xlabel("$n$", fontsize=15)
-plt.ylabel("L2-norms", fontsize=15)
-plt.xticks([2, 5,8, 11,14,17,20,23], fontsize=15)
-plt.yticks(fontsize=15)
-plt.legend(fontsize=15,loc='best')
-plt.grid(True)
-plt.tight_layout()
-#plt.show()
-plt.savefig(r'D:\NewPythonProject\results\figures\Exp3.png')
-plt.show()
-plt.close()
-
-#Exp4
-text_only = [0.6021645021645021, 0.6095238095238096, 0.5591]
-image_only = [0.4586870401810979, 0.4817878028404344, 0.4126315789473684]
-image_text = [0.6965, 0.6750591339155749, 0.6702]
-data = [text_only, image_only, image_text]
-colors = ['#5B8FF9', '#5AD8A6', '#A17FCB']
-fig, ax = plt.subplots(figsize=(5, 4.5))
-positions = [1, 1.2, 1.4]
-box = ax.boxplot(data, vert=True, patch_artist=True, widths=0.12, positions=positions,
-                 medianprops=dict(color='black', linewidth=2))
-for patch, color in zip(box['boxes'], colors):
-    patch.set(facecolor=color)
-plt.xlim(0.9, 1.5)
-plt.xticks(positions, ['Text-only', 'Image-only', 'Both'], fontsize=15)
-plt.yticks(fontsize=15)
-plt.ylabel('Accuracy', fontsize=15)
-plt.tight_layout()
-#plt.show()
-plt.savefig(r'D:\NewPythonProject\results\figures\Exp4.png')
-plt.close()
-
-import nibabel as nib
-import numpy as np
-
-# 加载 NIfTI 文件
-nifti_path = r"D:\NewPythonProject\Yucheng\5472302_2_0\5472302_2_0_sax.nii.gz"
-nifti_path = r"D:\NewPythonProject\Yucheng\6000182_2_0\6000182_2_0_sax.nii.gz"
-nifti_path = r"D:\NewPythonProject\Yucheng\5472302_2_0\5472302_2_0_lax_2c.nii.gz"
-nifti_path = r"D:\NewPythonProject\Yucheng\5472302_2_0\5472302_2_0_lax_3c.nii.gz"
-nifti_path = r"D:\NewPythonProject\Yucheng\5472302_2_0\5472302_2_0_lax_4c.nii.gz"
-nifti_path = r"D:\NewPythonProject\Yucheng\6000182_2_0\6000182_2_0_lax_2c.nii.gz"
-nifti_path = r"D:\NewPythonProject\Yucheng\6000182_2_0\6000182_2_0_lax_3c.nii.gz"
-nifti_path = r"D:\NewPythonProject\Yucheng\6000182_2_0\6000182_2_0_lax_4c.nii.gz"
-img = nib.load(nifti_path)
-data = img.get_fdata()
-
-# 检查数据维度
-print("图像数据形状:", data.shape)
-# 假设数据形状为 (X, Y, Z, T)，其中 T 为时间维度
-
-# 获取时间维度大小
-num_time_frames = data.shape[-1]
-
-# 遍历每个时间帧计算均值和标准差，进而估计 SNR
-for t in range(num_time_frames):
-    # 取出当前时间帧图像，假设使用所有切片（Z 维度）
-    # 如果需要针对单个切片，请根据需要调整索引
-    img_t = data[..., t]
-
-    # 计算当前时间帧的像素均值和标准差
-    mean_intensity = np.mean(img_t)
-    std_intensity = np.std(img_t)
 
     # 粗略估计 SNR（注意：这种方法仅作为示例，实际应用中可能需要更精确的 ROI 分析）
     snr = mean_intensity / std_intensity if std_intensity != 0 else float('inf')
