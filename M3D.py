@@ -13,7 +13,7 @@ import random
 from scipy.ndimage import zoom
 from extract import find_data_dir
 from collections import Counter
-from data.metrics import exact_match_score,precision_recall_f1_score,top_k_accuracy
+from image.metrics import exact_match_score,precision_recall_f1_score,top_k_accuracy
 
 device = torch.device('cuda') # 'cpu', 'cuda'
 dtype = torch.bfloat16 # or bfloat16, float16, float32
