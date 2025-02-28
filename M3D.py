@@ -27,10 +27,6 @@ torch.backends.cuda.enable_mem_efficient_sdp(False)
 torch.backends.cuda.enable_flash_sdp(False)
 
 
-#image_path = r'D:\NewPythonProject\Yucheng\6000182_2_0\6000182_2_0_lax_3c.nii.gz'
-#output_path = r'D:\NewPythonProject\Yucheng\6000182_2_0_lax_3c.npy'
-#image_path = '/SAN/medic/candi_tyc/Yucheng/6000182_2_0/6000182_2_0_lax_3c.nii.gz'
-#output_path = '/SAN/medic/candi_tyc/Yucheng/6000182_2_0_lax_3c.npy'
 
 def append_to_excel(file_path, data_frame, sheet_name='Sheet1'):
     try:
