@@ -391,38 +391,4 @@ plt.show()
 plt.close()
 
 
-#ANOVA
-import scipy.stats as stats
-beta1 = [x1[i][2] for i in np.arange(5)]
-beta2 = [x2[i][2] for i in np.arange(5)]
-beta3 = [x3[i][2] for i in np.arange(5)]
-
-beta1  = [x  for x in beta1 ]
-beta2  = [x  for x in beta2 ]
-beta3  = [x  for x in beta3 ]
-
-beta1 = [x1[i][1]+0.04 for i in np.arange(3)]
-beta2 = [x2[i][1] for i in np.arange(3)]
-beta3 = [x3[i][1] for i in np.arange(3)]
-beta4 = [x4[i][1] for i in np.arange(3)]
-
-#combined_list = list(zip(beta1, beta2, beta3, beta4))
-f_statistic, p_value = stats.f_oneway(np.array(beta1),
-                                      np.array(beta2), np.array(beta3),
-                                      np.array(beta4))
-print(f"F-statistic: {f_statistic}")
-print(f"P-value: {p_value}")
-
-
-for i in np.arange(5):
-   for j in np.arange(i+1,5):
-     t_statistic, p_value = stats.ttest_rel(combined_list[i], combined_list[j])
-     print(f"t-statistic: {t_statistic}")
-     print(f"P-value: {p_value}")
-
-
-    # 粗略估计 SNR（注意：这种方法仅作为示例，实际应用中可能需要更精确的 ROI 分析）
-    snr = mean_intensity / std_intensity if std_intensity != 0 else float('inf')
-
-    print(f"时间帧 {t}: 像素均值 = {mean_intensity:.2f}, 标准差 = {std_intensity:.2f}, SNR = {snr:.2f}")
 
