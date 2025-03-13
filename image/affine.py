@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn.functional as F  # noqa: N812
+import numpy as np
 
 
 def get_2d_rotation_matrix(
@@ -697,3 +698,38 @@ class BatchImageLabelRandomAffine(BatchImageRandomAffine):
             raise ValueError(f"Label should be signed integer, but got {label.dtype}.")
         return F.grid_sample(label, grid, mode="nearest", align_corners=self.align_corners)
 
+
+def data_affine(image_np):
+    spacing = (1.0, 1.0,10.0)
+    image_size = image_np[...].shape
+    image_np = image_np[None, None, ...]
+    image_np = image_np.astype(np.float32) / 255.
+    image = torch.from_numpy(image_np)
+
+    align_corners = False
+    max_rotation = (15, 15, 15)  # degrees for yz, xz, xy planes
+    max_zoom = (0.2, 0.2, 0.2)  # as a fraction for x, y, z axes
+    max_shear = (5, 5, 5,5, 5, 5)  # each value for yz, xz, xy planes
+    max_shift = (0.15, 0.15, 0.15)  # as a fraction for x, y, z axes
+    p = 1.0  # probability to apply transform
+
+
+    image_transform = BatchImageRandomAffine(
+        image_size=image_size,
+        spacing=spacing,
+        max_rotation=max_rotation,
+        max_zoom=max_zoom,
+        max_shear=max_shear,
+        max_shift=max_shift,
+        p=p,
+        dtype=torch.float32,
+        device=torch.device("cpu"),
+        align_corners=align_corners,
+    )
+
+    transformed_image_np = image_transform(image).numpy()
+
+    noise = np.random.normal(0, 0.1, transformed_image_np.shape)  # 生成高斯噪声
+    noisy_image = transformed_image_np + noise
+
+    return np.squeeze(noisy_image)

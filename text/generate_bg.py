@@ -843,8 +843,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--csv_path",
-        #default = Path("/SAN/medic/candi_tyc/Yucheng/text/ukb675874.csv"),
-        default=Path(r"D:\NewPythonProject\Yucheng\text\ukb675874.csv"),
+        default=Path(".../text/ukb675874.csv"),
         type=Path,
         help="Path of UKB metadata csv.",
     )
@@ -856,15 +855,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--out_dir",
-        #default=Path("/SAN/medic/candi_tyc/Yucheng/text"),
-        default=Path(r"D:\NewPythonProject\Yucheng\text"),
+        default=Path(".../text"),
         type=Path,
         help="Folder to save the downloaded files.",
     )
     parser.add_argument(
         "--background_template",
-        #default=Path("/SAN/medic/candi_tyc/Yucheng/text/background_template.json"),
-        default=Path(r"D:\NewPythonProject\Yucheng\text\background_template.json"),
+        default=Path(".../text/background_template.json"),
         type=Path,
         help="Folder to save the downloaded files.",
     )
