@@ -1,4 +1,6 @@
 # MUPM
+Paper "Analysis of Image-and-Text Uncertainty Propagation in Multimodal Large Language Models with Cardiac MR-Based Applications"
+
 1. Data Preprocessing: run ...\text\generate_bg.py to generate different text inputs.
 
 2. Get MLLM Predictions: run MLLM.py to obtain image-only, text-only, and image-text branches outputs.
